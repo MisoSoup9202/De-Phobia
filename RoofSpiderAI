@@ -1,0 +1,91 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
+
+
+public class EnemyRoofPatrol : MonoBehaviour
+{
+    UnityEngine.AI.NavMeshAgent agent; // Explicitly specify the namespace for NavMeshAgent
+
+    [SerializeField] float patrolRange = 10f; // Range for random movement
+    [SerializeField] float moveInterval = 2f; // Time between destination updates
+    [SerializeField] LayerMask roofLayer; // Layer for the roof plane
+
+
+    [Header("Animations")]
+    [SerializeField]
+    private Animator _animator;
+
+
+    UnityEngine.Vector3 currentDestination; // Explicit namespace for Vector3
+    float moveTimer = 0f;
+
+    void Start()
+    {
+        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+
+        // Disable default gravity
+        agent.updateUpAxis = false;
+        agent.updatePosition = true;
+        agent.updateRotation = true;
+
+        SetRandomDestination();
+    }
+
+    void Update()
+    {
+        AlignToRoof();
+
+        moveTimer += Time.deltaTime;
+        if (moveTimer >= moveInterval)
+        {
+            SetRandomDestination();
+            moveTimer = 0f;
+        }
+
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            SetRandomDestination();
+        }
+    }
+
+    void SetRandomDestination()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            float randomX = Random.Range(-patrolRange, patrolRange);
+            float randomZ = Random.Range(-patrolRange, patrolRange);
+            UnityEngine.Vector3 randomPoint = new UnityEngine.Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
+
+            NavMeshHit hit;
+            if (UnityEngine.AI.NavMesh.SamplePosition(randomPoint, out hit, patrolRange, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                currentDestination = hit.position;
+                agent.SetDestination(currentDestination);
+                Debug.Log($"New destination set: {currentDestination}");
+                return;
+            }
+        }
+
+        Debug.LogWarning("Failed to find a valid destination.");
+    }
+
+    void AlignToRoof()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, UnityEngine.Vector3.up, out hit, Mathf.Infinity, roofLayer))
+        {
+            transform.rotation = Quaternion.LookRotation(transform.forward, -hit.normal);
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, patrolRange);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawSphere(currentDestination, 0.5f);
+    }
+}
