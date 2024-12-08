@@ -1,0 +1,29 @@
+using UnityEngine;
+
+public class SpiderRemover : MonoBehaviour
+{
+    [SerializeField] string spiderTag = "Spider"; // Tag used to identify spiders
+
+    void Update()
+    {
+        // Remove all spiders when the R key is pressed
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            RemoveAllSpiders();
+        }
+    }
+
+    void RemoveAllSpiders()
+    {
+        // Find all GameObjects with the specified tag
+        GameObject[] spiders = GameObject.FindGameObjectsWithTag(spiderTag);
+
+        // Loop through and destroy each spider
+        foreach (GameObject spider in spiders)
+        {
+            Destroy(spider);
+        }
+
+        Debug.Log($"{spiders.Length} spiders removed.");
+    }
+}
