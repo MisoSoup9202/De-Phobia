@@ -1,0 +1,42 @@
+using UnityEngine;
+
+public class SpiderSpawner : MonoBehaviour
+{
+    [SerializeField] GameObject spiderPrefab; // Prefab of the spider to spawn
+    [SerializeField] Vector3 spawnAreaCenter; // Center of the spawn area
+    [SerializeField] Vector3 spawnAreaSize = new Vector3((float)1.4, (float)1.8, (float)3.5); // Size of the spawn area
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Debug.Log("Spacebar pressed, spawning spider...");
+            SpawnSpider();
+        }
+    }
+
+    void SpawnSpider()
+    {
+        if (spiderPrefab == null)
+        {
+            Debug.LogError("Spider Prefab is not assigned in the Inspector!");
+            return;
+        }
+
+        Vector3 randomPosition = spawnAreaCenter + new Vector3(
+            Random.Range(-spawnAreaSize.x / 2, spawnAreaSize.x / 2),
+            Random.Range(-spawnAreaSize.y / 2, spawnAreaSize.y / 2),
+            Random.Range(-spawnAreaSize.z / 2, spawnAreaSize.z / 2)
+        );
+
+        Instantiate(spiderPrefab, randomPosition, Quaternion.identity);
+        Debug.Log($"Spawned spider at: {randomPosition}");
+    }
+
+    // Visualize the spawn area in the Scene view
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(spawnAreaCenter, spawnAreaSize);
+    }
+}
