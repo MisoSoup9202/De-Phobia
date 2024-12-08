@@ -1,0 +1,95 @@
+using UnityEngine;
+using UnityEngine.AI;
+
+public class EnemyAIPatrol : MonoBehaviour
+{
+    NavMeshAgent agent;
+
+    [SerializeField] LayerMask groundLayer, avoidanceLayer;
+    [SerializeField] float patrolRange = 10f; // Range for random movement
+    [SerializeField] float moveInterval = 2f; // Time between destination updates
+    [SerializeField] float avoidanceRadius = 2f; // Radius to avoid obstacles
+
+    Vector3 currentDestination;
+    bool isMoving = false;
+
+    float moveTimer = 0f;
+
+    void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        agent.speed = 0.2f;
+        agent.stoppingDistance = 0.5f;
+        agent.acceleration = 2f;
+
+        SetRandomDestination();
+    }
+
+    void Update()
+    {
+        // Update destination periodically
+        moveTimer += Time.deltaTime;
+        if (moveTimer >= moveInterval)
+        {
+            SetRandomDestination();
+            moveTimer = 0f;
+        }
+
+        // Check if the spider reached the destination
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            SetRandomDestination();
+        }
+    }
+
+    void SetRandomDestination()
+    {
+        for (int i = 0; i < 10; i++) // Try multiple times to find a valid destination
+        {
+            // Generate a random point within the patrol range
+            float randomX = Random.Range(-patrolRange, patrolRange);
+            float randomZ = Random.Range(-patrolRange, patrolRange);
+            Vector3 randomPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
+
+            // Validate the point on the NavMesh
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(randomPoint, out hit, patrolRange, NavMesh.AllAreas))
+            {
+                // Avoid restricted zones using Physics.OverlapSphere
+                Collider[] colliders = Physics.OverlapSphere(hit.position, avoidanceRadius, avoidanceLayer);
+                if (colliders.Length == 0) // Ensure no avoidance zones nearby
+                {
+                    currentDestination = hit.position;
+                    agent.SetDestination(currentDestination);
+                    isMoving = true;
+                    Debug.Log($"New destination set: {currentDestination}");
+                    return;
+                }
+            }
+        }
+
+        Debug.LogWarning("Failed to find a valid destination.");
+    }
+
+    void OnDrawGizmos()
+    {
+        // Draw patrol range
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, patrolRange);
+
+        // Draw current destination
+        if (isMoving)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawSphere(currentDestination, 0.5f);
+        }
+
+        // Visualize avoidance zones
+        Gizmos.color = Color.red;
+        Collider[] avoidanceZones = Physics.OverlapSphere(transform.position, patrolRange, LayerMask.GetMask("Avoidance"));
+        foreach (var zone in avoidanceZones)
+        {
+            Gizmos.DrawWireSphere(zone.transform.position, avoidanceRadius);
+        }
+    }
+}
